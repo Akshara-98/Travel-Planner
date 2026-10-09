@@ -1,0 +1,690 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agentic AI Travel Planner</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <style>
+      :root {
+          --primary: #1e3a8a;
+          --primary-soft: #dbeafe;
+          --success: #16a34a;
+          --warning: #f59e0b;
+          --danger: #dc2626;
+          --muted: #6b7280;
+          --pending: #d1d5db;
+          --background: #f8fafc;
+          --card: #ffffff;
+          --text: #1f2937;
+      }
+
+      body {
+          background: linear-gradient(180deg, #f8fafc 0%, #eef4ff 100%);
+          color: var(--text);
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      .navbar {
+          background: linear-gradient(135deg, #0f172a 0%, #1d4ed8 100%);
+      }
+
+      .section-title {
+          font-size: 1.4rem;
+          font-weight: 700;
+          margin-bottom: 1rem;
+          color: var(--primary);
+      }
+
+      .card {
+          border-radius: 18px;
+      }
+
+      .form-control,
+      .form-select,
+      textarea {
+          border-radius: 12px;
+          border: 1px solid #dbe4f0;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      .form-control:focus,
+      .form-select:focus {
+          border-color: rgba(30, 58, 138, 0.5);
+          box-shadow: 0 0 0 0.2rem rgba(30, 58, 138, 0.12);
+      }
+
+      .btn-primary {
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+          border: none;
+          border-radius: 12px;
+          font-weight: 600;
+      }
+
+      .execution-timeline {
+          display: flex;
+          flex-direction: column;
+          gap: 0.9rem;
+          max-height: 620px;
+          overflow-y: auto;
+          padding-right: 0.5rem;
+      }
+
+      .timeline-item {
+          border-left: 4px solid var(--pending);
+          background: #f8fafc;
+          border-radius: 12px;
+          padding: 0.9rem 1rem 0.9rem 1rem;
+          margin-left: 0.35rem;
+          position: relative;
+      }
+
+      .timeline-item::before {
+          content: "";
+          position: absolute;
+          left: -0.7rem;
+          top: 1.05rem;
+          width: 0.8rem;
+          height: 0.8rem;
+          border-radius: 50%;
+          background: var(--pending);
+      }
+
+      .timeline-item.completed {
+          border-left-color: var(--success);
+          background: rgba(22, 163, 74, 0.06);
+      }
+
+      .timeline-item.completed::before {
+          background: var(--success);
+      }
+
+      .timeline-item.running {
+          border-left-color: #2563eb;
+          background: rgba(37, 99, 235, 0.06);
+      }
+
+      .timeline-item.running::before {
+          background: #2563eb;
+          animation: pulse 1.4s infinite ease-in-out;
+      }
+
+      .timeline-item.failed {
+          border-left-color: var(--danger);
+          background: rgba(220, 38, 38, 0.06);
+      }
+
+      .timeline-item.failed::before {
+          background: var(--danger);
+      }
+
+      .timeline-item.retrying {
+          border-left-color: var(--warning);
+          background: rgba(245, 158, 11, 0.08);
+      }
+
+      .timeline-item.retrying::before {
+          background: var(--warning);
+      }
+
+      .timeline-item.pending {
+          border-left-color: var(--pending);
+          background: rgba(148, 163, 184, 0.08);
+      }
+
+      .timeline-item.pending::before {
+          background: var(--pending);
+      }
+
+      .timeline-item.waiting_for_approval {
+          border-left-color: #7c3aed;
+          background: rgba(124, 58, 237, 0.06);
+      }
+
+      .timeline-item.waiting_for_approval::before {
+          background: #7c3aed;
+      }
+
+      .timeline-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 1rem;
+          margin-bottom: 0.5rem;
+      }
+
+      .timeline-title {
+          font-weight: 700;
+          margin: 0;
+          color: var(--text);
+      }
+
+      .badge-status {
+          font-size: 0.72rem;
+          font-weight: 700;
+          border-radius: 999px;
+          padding: 0.35rem 0.65rem;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+      }
+
+      .decision-panel {
+          display: grid;
+          gap: 0.8rem;
+      }
+
+      .decision-card {
+          border: 1px solid #e7edf6;
+          background: #f9fbff;
+          border-radius: 14px;
+          padding: 0.9rem 1rem;
+      }
+
+      .travel-plan {
+          display: grid;
+          gap: 1rem;
+      }
+
+      .plan-summary {
+          display: grid;
+          gap: 0.7rem;
+          grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      }
+
+      .summary-box {
+          background: var(--primary-soft);
+          border-radius: 12px;
+          padding: 0.85rem 1rem;
+      }
+
+      .summary-label {
+          color: var(--muted);
+          font-size: 0.8rem;
+          text-transform: uppercase;
+          letter-spacing: 0.04em;
+      }
+
+      .summary-value {
+          font-weight: 700;
+          font-size: 1.05rem;
+          color: var(--text);
+      }
+
+      .itinerary-card,
+      .note-card {
+          border: 1px solid #e5e7eb;
+          background: white;
+          border-radius: 14px;
+          padding: 1rem;
+      }
+
+      .day-header {
+          font-size: 1.1rem;
+          font-weight: 700;
+          margin-bottom: 0.35rem;
+      }
+
+      .activity-list,
+      .note-list {
+          margin: 0.5rem 0 0 1.1rem;
+          padding: 0;
+      }
+
+      .approval-panel {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.8rem;
+          align-items: center;
+      }
+
+      .alert-success {
+          background: rgba(34, 197, 94, 0.12);
+          color: #166534;
+          border: 1px solid rgba(34, 197, 94, 0.2);
+      }
+
+      .alert-error {
+          background: rgba(239, 68, 68, 0.12);
+          color: #991b1b;
+          border: 1px solid rgba(239, 68, 68, 0.2);
+      }
+
+      @keyframes pulse {
+          0% {
+              box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.45);
+          }
+          70% {
+              box-shadow: 0 0 0 10px rgba(37, 99, 235, 0);
+          }
+          100% {
+              box-shadow: 0 0 0 0 rgba(37, 99, 235, 0);
+          }
+      }
+
+      @media (max-width: 768px) {
+          .timeline-head {
+              flex-direction: column;
+              align-items: flex-start;
+          }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
+      <div class="container">
+        <span class="navbar-brand mb-0 h1">Agentic AI Travel Planner</span>
+      </div>
+    </nav>
+
+    <main class="container py-5">
+      <section class="row g-4 mb-4">
+        <div class="col-lg-5">
+          <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+              <h2 class="section-title">Travel Planning Input</h2>
+              <form id="travel-form">
+                <div class="row g-3">
+                  <div class="col-md-6">
+                    <label class="form-label" for="destination">Destination / City</label>
+                    <input class="form-control" id="destination" name="destination" placeholder="Paris" required />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label" for="starting_location">Starting Location</label>
+                    <input class="form-control" id="starting_location" name="starting_location" placeholder="New York" />
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label" for="start_date">Travel Start Date</label>
+                    <input class="form-control" id="start_date" name="start_date" type="date" required />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label" for="end_date">Travel End Date</label>
+                    <input class="form-control" id="end_date" name="end_date" type="date" required />
+                  </div>
+
+                  <div class="col-md-6">
+                    <label class="form-label" for="travelers">Number of Travelers</label>
+                    <input class="form-control" id="travelers" name="travelers" type="number" min="1" value="2" required />
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label" for="budget">Budget</label>
+                    <input class="form-control" id="budget" name="budget" placeholder="$1500" required />
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label" for="interests">Travel Preferences / Interests</label>
+                    <textarea class="form-control" id="interests" name="interests" rows="3" placeholder="Historic sites, art, food, museums"></textarea>
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label" for="email">User Email Address</label>
+                    <input class="form-control" id="email" name="email" type="email" placeholder="name@example.com" />
+                    <div class="form-text">Optional. Enter an address only if you want to email the approved plan.</div>
+                  </div>
+
+                  <div class="col-12">
+                    <label class="form-label" for="additional_instructions">Additional Instructions</label>
+                    <textarea class="form-control" id="additional_instructions" name="additional_instructions" rows="3" placeholder="Optional notes or preferences"></textarea>
+                  </div>
+
+                  <div class="col-12">
+                    <button id="submit-plan" type="submit" class="btn btn-primary w-100">Generate Travel Plan</button>
+                  </div>
+                </div>
+              </form>
+              <div id="form-alert" class="alert d-none mt-3" role="alert"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-7">
+          <div class="card shadow-sm border-0 h-100">
+            <div class="card-body">
+              <h2 class="section-title">Live Agentic AI Execution Monitor</h2>
+              <div id="execution-timeline" class="execution-timeline" aria-live="polite"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="row g-4 mb-4">
+        <div class="col-12">
+          <div class="card shadow-sm border-0">
+            <div class="card-body">
+              <h2 class="section-title">Agent Decisions and Tool Execution Details</h2>
+              <div id="decision-panel" class="decision-panel"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="row g-4 mb-4">
+        <div class="col-12">
+          <div class="card shadow-sm border-0">
+            <div class="card-body">
+              <h2 class="section-title">Generated Travel Plan</h2>
+              <div id="travel-plan" class="travel-plan"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="row g-4">
+        <div class="col-12">
+          <div class="card shadow-sm border-0">
+            <div class="card-body">
+              <h2 class="section-title">User Approval and Actions</h2>
+              <div id="approval-panel" class="approval-panel"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById('travel-form');
+      const formAlert = document.getElementById('form-alert');
+      const timeline = document.getElementById('execution-timeline');
+      const decisionPanel = document.getElementById('decision-panel');
+      const travelPlan = document.getElementById('travel-plan');
+      const approvalPanel = document.getElementById('approval-panel');
+
+      const API_BASE = window.location.port === '5000' ? '' : 'http://127.0.0.1:5000';
+      const apiUrl = (path) => `${API_BASE}${path}`;
+      let currentExecutionId = null;
+      let eventSource = null;
+      let currentPlan = null;
+
+      const statusColors = {
+          completed: 'success',
+          running: 'primary',
+          failed: 'danger',
+          pending: 'secondary',
+          retrying: 'warning',
+          waiting_for_approval: 'info',
+      };
+
+      function showAlert(message, kind = 'success') {
+          formAlert.className = `alert alert-${kind} mt-3`;
+          formAlert.textContent = message;
+          formAlert.classList.remove('d-none');
+      }
+
+      function statusBadge(status) {
+          const value = (status || 'pending').replace('_', ' ');
+          const color = statusColors[status] || 'secondary';
+          return `<span class="badge-status bg-${color} text-white">${value}</span>`;
+      }
+
+      function updateTimeline(event) {
+          if (!event || !event.step_name) {
+              return;
+          }
+
+          const item = document.createElement('div');
+          item.className = `timeline-item ${event.status || 'pending'}`;
+          item.innerHTML = `
+              <div class="timeline-head">
+                  <p class="timeline-title">${event.step_name}</p>
+                  ${statusBadge(event.status)}
+              </div>
+              <div class="text-muted small mb-2">${event.timestamp || 'just now'} &bull; Tool: ${event.tool_name || 'N/A'}</div>
+              <div><strong>Summary:</strong> ${event.summary || 'No summary available.'}</div>
+              <div class="mt-1"><strong>Decision:</strong> ${event.decision || 'No decision recorded.'}</div>
+          `;
+          timeline.prepend(item);
+          while (timeline.children.length > 18) {
+              timeline.removeChild(timeline.lastChild);
+          }
+      }
+
+      function updateDecisionPanel(event) {
+          if (!event || !event.step_name) {
+              return;
+          }
+
+          const card = document.createElement('div');
+          card.className = 'decision-card';
+          card.innerHTML = `
+              <div class="d-flex justify-content-between align-items-center gap-3 mb-2">
+                  <strong>${event.step_name}</strong>
+                  ${statusBadge(event.status)}
+              </div>
+              <div>${event.summary || 'No summary available.'}</div>
+              <div class="text-muted small mt-2">Tool: ${event.tool_name || 'N/A'} &bull; ${event.timestamp || 'just now'}</div>
+          `;
+          decisionPanel.prepend(card);
+          while (decisionPanel.children.length > 8) {
+              decisionPanel.removeChild(decisionPanel.lastChild);
+          }
+      }
+
+      function renderPlan(plan) {
+          if (!plan) {
+              travelPlan.innerHTML = '<div class="alert alert-info">The agent will show the generated itinerary here once it finishes.</div>';
+              return;
+          }
+
+          const itinerary = plan.itinerary || [];
+          const notes = plan.important_notes || [];
+          const recommendations = plan.travel_recommendations || [];
+          const cardHtml = itinerary.map((day) => `
+              <div class="itinerary-card">
+                  <div class="day-header">${day.day || 'Day'}</div>
+                  <div class="fw-semibold">${day.summary || 'Planned activity'}</div>
+                  <ul class="activity-list">
+                      ${(day.activities || []).map((activity) => `<li>${activity}</li>`).join('')}
+                  </ul>
+                  <div class="mt-2"><strong>Estimated cost:</strong> ${day.estimated_cost || 'Included'}</div>
+              </div>
+          `).join('');
+
+          travelPlan.innerHTML = `
+              <div class="plan-summary">
+                  <div class="summary-box"><div class="summary-label">Destination</div><div class="summary-value">${plan.destination || 'N/A'}</div></div>
+                  <div class="summary-box"><div class="summary-label">Dates</div><div class="summary-value">${plan.start_date || ''} to ${plan.end_date || ''}</div></div>
+                  <div class="summary-box"><div class="summary-label">Travelers</div><div class="summary-value">${plan.travelers || 1}</div></div>
+                  <div class="summary-box"><div class="summary-label">Budget</div><div class="summary-value">${plan.budget || 'Flexible'}</div></div>
+                  <div class="summary-box"><div class="summary-label">Weather</div><div class="summary-value">${plan.weather_summary || 'N/A'}</div></div>
+              </div>
+              <div class="mt-3">
+                  <h4>Recommended Places</h4>
+                  <ul class="activity-list">
+                      ${(plan.recommended_places || []).map((place) => `<li>${place}</li>`).join('')}
+                  </ul>
+              </div>
+              <div class="mt-3">
+                  <h4>Day-by-day Itinerary</h4>
+                  ${cardHtml}
+              </div>
+              <div class="mt-3">
+                  <h4>Estimated Expenses</h4>
+                  <ul class="activity-list">
+                      ${Object.entries(plan.estimated_expenses || {}).map(([key, value]) => `<li><strong>${key}</strong>: ${value}</li>`).join('')}
+                  </ul>
+              </div>
+              <div class="mt-3">
+                  <h4>Recommendations</h4>
+                  <ul class="activity-list">
+                      ${recommendations.map((item) => `<li>${item}</li>`).join('')}
+                  </ul>
+              </div>
+              <div class="mt-3">
+                  <h4>Important Notes</h4>
+                  <ul class="note-list">
+                      ${notes.map((item) => `<li>${item}</li>`).join('')}
+                  </ul>
+              </div>
+          `;
+      }
+
+      function renderApprovalPanel(plan) {
+          if (!plan) {
+              approvalPanel.innerHTML = '<div class="text-muted">No plan has been generated yet.</div>';
+              return;
+          }
+
+          const approved = plan.status === 'approved';
+          const canEmail = approved && Boolean(plan.email);
+          approvalPanel.innerHTML = `
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                  <button class="btn btn-success" data-action="approve">Approve Plan</button>
+                  <button class="btn btn-outline-primary" data-action="revise">Request Changes</button>
+                  <button class="btn btn-outline-danger" data-action="reject">Reject Plan</button>
+              </div>
+              <div class="d-flex flex-wrap gap-2">
+                  <button class="btn btn-primary" data-action="save" ${approved ? '' : 'disabled'}>Save Approved Plan</button>
+                  <button class="btn btn-dark" data-action="email" ${canEmail ? '' : 'disabled'}>Send Approved Plan to Email</button>
+              </div>
+              <div id="approval-message" class="mt-3"></div>
+          `;
+
+          document.querySelectorAll('[data-action]').forEach((button) => {
+              button.addEventListener('click', async () => {
+                  const action = button.dataset.action;
+                  if (action === 'approve') {
+                      await callAction('approve');
+                  } else if (action === 'reject') {
+                      await callAction('reject');
+                  } else if (action === 'revise') {
+                      const feedback = window.prompt('What changes would you like?', 'Make it more budget-friendly and include scenic experiences.');
+                      if (!feedback) {
+                          return;
+                      }
+                      const response = await fetch(apiUrl(`/api/plans/${currentExecutionId}/revise`), {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ feedback }),
+                      });
+                      const json = await response.json();
+                      if (response.ok) {
+                          showAlert('Revision requested. The agent is regenerating the plan.', 'info');
+                      } else {
+                          showAlert(json.error || 'Revision request failed.', 'danger');
+                      }
+                  } else if (action === 'save') {
+                      const response = await fetch(apiUrl(`/api/plans/${currentExecutionId}/save`), { method: 'POST' });
+                      const json = await response.json();
+                      if (response.ok) {
+                          showAlert(`Saved successfully. Plan ID: ${json.plan_id}`, 'success');
+                      } else {
+                          showAlert(json.error || 'Unable to save the approved plan.', 'danger');
+                      }
+                  } else if (action === 'email') {
+                      const response = await fetch(apiUrl(`/api/plans/${currentExecutionId}/email`), { method: 'POST' });
+                      const json = await response.json();
+                      if (response.ok) {
+                          showAlert(`Email status: ${json.status}. ${json.result.message || 'Delivery accepted by SMTP.'}`, 'success');
+                      } else {
+                          showAlert(`Email failed: ${json.error || 'Unknown error.'}`, 'danger');
+                      }
+                  }
+              });
+          });
+      }
+
+      async function refreshPlanState() {
+          if (!currentExecutionId) {
+              return;
+          }
+
+          try {
+              const response = await fetch(apiUrl(`/api/plans/${currentExecutionId}`));
+              if (!response.ok) {
+                  return;
+              }
+              const json = await response.json();
+              if (json.plan) {
+                  currentPlan = json.plan;
+                  renderPlan(currentPlan);
+                  renderApprovalPanel(currentPlan);
+              }
+          } catch (error) {
+              console.error('Could not refresh the travel plan state.', error);
+              showAlert('Could not refresh the travel plan state. Check the backend connection.', 'warning');
+          }
+      }
+
+      async function callAction(action) {
+          const response = await fetch(apiUrl(`/api/plans/${currentExecutionId}/${action}`), { method: 'POST' });
+          const json = await response.json();
+          if (!response.ok) {
+              showAlert(json.error || 'Action failed.', 'danger');
+              return;
+          }
+
+          if (action === 'approve') {
+              showAlert('Plan approved. You may now save or email it.', 'success');
+              currentPlan = json.plan;
+              renderPlan(currentPlan);
+              renderApprovalPanel(currentPlan);
+          } else if (action === 'reject') {
+              showAlert('Plan rejected. No database or email actions will proceed.', 'warning');
+          }
+      }
+
+      function closeEventStream() {
+          if (eventSource) {
+              eventSource.close();
+              eventSource = null;
+          }
+      }
+
+      function connectToEventStream(executionId) {
+          currentExecutionId = executionId;
+          closeEventStream();
+          eventSource = new EventSource(apiUrl(`/api/events/${executionId}`));
+
+          eventSource.onmessage = async (event) => {
+              const payload = JSON.parse(event.data);
+              updateTimeline(payload);
+              updateDecisionPanel(payload);
+              if (payload.status === 'failed') {
+                  showAlert(payload.summary || 'Travel plan generation failed.', 'danger');
+              }
+              if (payload.step_name === 'Waiting for User Approval' || payload.step_name === 'Travel Plan Generation' || payload.step_name === 'Final Plan Validation') {
+                  await refreshPlanState();
+              }
+          };
+
+          eventSource.onerror = () => {
+              showAlert('Live updates were interrupted. Plan generation may still be running; check the monitor again shortly.', 'warning');
+          };
+      }
+
+      form.addEventListener('submit', async (event) => {
+          event.preventDefault();
+          const formData = new FormData(form);
+          const payload = Object.fromEntries(formData.entries());
+
+          try {
+              const response = await fetch(apiUrl('/api/travel-plan'), {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+                  body: new URLSearchParams(payload),
+              });
+              const json = await response.json();
+              if (!response.ok) {
+                  showAlert(json.error || 'Request failed.', 'danger');
+                  return;
+              }
+
+              currentPlan = null;
+              timeline.innerHTML = '';
+              decisionPanel.innerHTML = '';
+              travelPlan.innerHTML = '<div class="alert alert-info">The plan is being generated and monitored in real time.</div>';
+              approvalPanel.innerHTML = '<div class="text-muted">Approval actions will appear once the agent finishes.</div>';
+              showAlert('Generating the travel plan and streaming execution updates...', 'info');
+              connectToEventStream(json.execution_id);
+          } catch (error) {
+              console.error('Could not start travel plan generation.', error);
+              showAlert('Could not start the plan generation request. Check that the Flask backend is running at http://127.0.0.1:5000.', 'danger');
+          }
+      });
+
+      window.addEventListener('beforeunload', closeEventStream);
+      travelPlan.innerHTML = '<div class="alert alert-info">The planned itinerary will appear after the agent finishes generating it.</div>';
+      approvalPanel.innerHTML = '<div class="text-muted">Plan approval controls appear after a plan is created.</div>';
+    </script>
+  </body>
+</html>
